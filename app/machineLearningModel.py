@@ -1,15 +1,13 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from PIL import Image, UnidentifiedImageError
+# app/machineLearningModel.py
 import torch
 import torch.nn as nn
-from torchvision import transforms, models
+from torchvision import models
 import pytorch_lightning as pl
-import io
+from torchvision import transforms
 
-# Initialize FastAPI app
-app = FastAPI()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define the PyTorch Lightning model
+# Define the PyTorch model
 
 
 class MobileNetV3SmallClassifier(pl.LightningModule):
@@ -17,7 +15,7 @@ class MobileNetV3SmallClassifier(pl.LightningModule):
         super(MobileNetV3SmallClassifier, self).__init__()
         self.model = models.mobilenet_v3_small(pretrained=True)
         for param in self.model.parameters():
-            param.requires_grad = False  # Freeze all layers
+            param.requires_grad = False
         num_ftrs = self.model.classifier[3].in_features
         self.model.classifier[3] = nn.Linear(num_ftrs, num_classes)
         self.criterion = nn.CrossEntropyLoss()
@@ -29,7 +27,6 @@ class MobileNetV3SmallClassifier(pl.LightningModule):
 
 # Load the model and set it to evaluation mode
 model_path = 'Mobile_Pytorch_Architecture_v1.pth'
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Initialize the model
 model = MobileNetV3SmallClassifier(num_classes=27)
@@ -68,53 +65,4 @@ def predict_image(image):
     with torch.no_grad():
         output = model(img_tensor)
         _, predicted_class = torch.max(output, 1)
-    return predicted_class.item()
-
-# API route for prediction
-
-
-@app.post("/predict/")
-async def predict(file: UploadFile = File(...)):
-    try:
-        image = Image.open(io.BytesIO(await file.read()))
-
-        # Convert to RGB if not already
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-
-        predicted_class = predict_image(image)
-        predicted_label = classLabels.get(predicted_class, "Unknown")
-
-        return {
-            "predicted_class": predicted_class,
-            "predicted_label": predicted_label
-        }
-    except UnidentifiedImageError:
-        raise HTTPException(
-            status_code=400, detail="Invalid image format. Please upload a valid image file.")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An error occurred during prediction: {str(e)}")
-
-# API route to test with a default image
-
-
-@app.get("/test/")
-async def test_default_image():
-    try:
-        default_image_path = 'bandstand_test.jpg'
-        image = Image.open(default_image_path)
-
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-
-        predicted_class = predict_image(image)
-        predicted_label = classLabels.get(predicted_class, "Unknown")
-
-        return {
-            "predicted_class": predicted_class,
-            "predicted_label": predicted_label
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"An error occurred during prediction: {str(e)}")
+    return predicted_class.item(), classLabels.get(predicted_class.item(), "Unknown")
