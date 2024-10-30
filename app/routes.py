@@ -1,11 +1,30 @@
 # app/routes.py
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from pydantic import BaseModel
 from PIL import Image
 import io
 from .machineLearningModel import predict_image
 from .scraper import get_upcoming_events
+from .payment import create_payment_intent, create_subscription
 
 router = APIRouter()
+
+
+class PaymentRequest(BaseModel):
+    amount: int  # Amount in cents
+    plan: str  # Plan type
+
+
+@router.post("/payment-intent/")
+async def payment_intent(request: PaymentRequest):
+    try:
+        if request.plan == 'Monthly':
+            intent = await create_subscription(request.amount)
+        else:
+            intent = await create_payment_intent(request.amount)
+        return intent
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/predict/")
