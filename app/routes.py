@@ -13,15 +13,16 @@ router = APIRouter()
 class PaymentRequest(BaseModel):
     amount: int  # Amount in cents
     plan: str  # Plan type
+    user_id: str  # User ID
 
 
 @router.post("/payment-intent/")
 async def payment_intent(request: PaymentRequest):
     try:
         if request.plan == 'Monthly':
-            intent = await create_subscription(request.amount)
+            intent = await create_subscription(request.amount, request.user_id)
         else:
-            intent = await create_payment_intent(request.amount)
+            intent = await create_payment_intent(request.amount, request.user_id)
         return intent
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

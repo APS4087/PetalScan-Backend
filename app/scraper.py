@@ -29,6 +29,8 @@ async def get_upcoming_events():
                     "Date", "").strip() if event.find(class_="events__subsection") else "No Date"
                 description = event.find("a", class_="events__link").get_text(
                     strip=True) if event.find("a", class_="events__link") else "No Description"
+                link = event.find("a", class_="events__link")['href']
+                full_link = f"https://www.nparks.gov.sg{link}"
 
                 start_date_str = date_text.split(" - ")[0]
                 try:
@@ -36,7 +38,7 @@ async def get_upcoming_events():
                         start_date_str, "%d %b %Y").date()
                     if event_date >= today:
                         events.append(
-                            {"title": title, "date": start_date_str, "description": description})
+                            {"title": title, "date": start_date_str, "description": description, "link": full_link})
                 except ValueError:
                     continue
 

@@ -1,22 +1,23 @@
-# app/payment.py
 import stripe
 from fastapi import HTTPException
 import os
 
 # Set up the Stripe API key
 stripe.api_key = os.getenv(
-    "STRIPE_SECRET_KEY", "sk_test_51QFSSY05XemVskwXbeESlpgekSs24cK93Hg0hN7JHC1RYf8JM5x0zcanl2w2enIC3LP4wnABl61QcgVsIRnLmFF100IENR1uC9")
+    "STRIPE_SECRET_KEY", "sk_test_51QFSSY05XemVskwXbeESlpgekSs24cK93Hg0hN7JHC1RYf8JM5x0zcanl2w2enIC3LP4wnABl61QcgVsIRnLmFF100IENR1uC9"
+)
 
 
-async def create_payment_intent(amount: int):
+async def create_payment_intent(amount: int, user_id: str):
     """
     Creates a Stripe PaymentIntent for the specified amount in SGD.
     """
     try:
-        # Create a PaymentIntent with the specified amount and currency
+        # Create a PaymentIntent with the specified amount, currency, and metadata
         payment_intent = stripe.PaymentIntent.create(
             amount=amount,  # Amount in cents for SGD
             currency="sgd",
+            metadata={"user_id": user_id},  # Include user ID in metadata
             # Enable automatic payment methods
             automatic_payment_methods={"enabled": True}
         )
@@ -28,7 +29,7 @@ async def create_payment_intent(amount: int):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def create_subscription(amount: int):
+async def create_subscription(amount: int, user_id: str):
     """
     Creates a Stripe Subscription for the specified amount in SGD.
     """
@@ -45,7 +46,8 @@ async def create_subscription(amount: int):
         )
 
         # Create a customer
-        customer = stripe.Customer.create()
+        customer = stripe.Customer.create(
+            metadata={"user_id": user_id})  # Include user ID in metadata
 
         # Create a subscription
         subscription = stripe.Subscription.create(
