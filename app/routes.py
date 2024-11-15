@@ -38,6 +38,8 @@ async def predict(file: UploadFile = File(...)):
             image = image.convert('RGB')
 
         predicted_class, predicted_label = predict_image(image)
+        if predicted_class is None:
+            return {"message": "No valid object detected"}
         return {"predicted_class": predicted_class, "predicted_label": predicted_label}
 
     except Exception as e:
